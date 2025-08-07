@@ -215,7 +215,9 @@ jobs:
         make download -j$(nproc)
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
-
+    - name: Check Image Size(检查镜像大小)
+      run: ls -lh $OPENWRT_PATH/build_dir/target-aarch64_cortex-a53_musl/linux-qualcommax_ipq60xx/jdcloud_re-cs-07-uImage.itb
+    
     - name: Compile Firmware(开始编译固件)
       id: compile
       run: |
