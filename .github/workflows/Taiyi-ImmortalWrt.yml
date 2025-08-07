@@ -117,7 +117,89 @@ jobs:
         cd $OPENWRT_PATH
         ./scripts/feeds update -a
         ./scripts/feeds install -a
-  
+    - name: Fix DAED missing dependencies(修复DAED依赖问题)
+      run: |
+        cd $OPENWRT_PATH
+        
+        # 在源码树中创建缺失的包定义
+        mkdir -p package/daed-geodata/daed-geoip/files
+        mkdir -p package/daed-geodata/daed-geosite/files
+        
+        # 为 daed-geoip 创建 Makefile
+        cat << 'EOF' > package/daed-geodata/daed-geoip/Makefile
+        include $(TOPDIR)/rules.mk
+        PKG_NAME:=daed-geoip
+        PKG_VERSION:=$(shell date +%Y%m%d)
+        PKG_RELEASE:=1
+        include $(INCLUDE_DIR)/package.mk
+        
+        define Package/daed-geoip
+          SECTION:=net
+          CATEGORY:=Network
+          TITLE:=DAED GeoIP Database
+          PKGARCH:=all
+        endef
+        
+        define Build/Prepare
+        endef
+        
+        define Build/Compile
+        endef
+        
+        define Package/daed-geoip/install
+        	$(INSTALL_DIR) $(1)/usr/share/daed
+        	$(INSTALL_DATA) ./files/geoip.dat $(1)/usr/share/daed/
+        endef
+        
+        $(eval $(call BuildPackage,daed-geoip))
+        EOF
+        
+        # 为 daed-geosite 创建 Makefile
+        cat << 'EOF' > package/daed-geodata/daed-geosite/Makefile
+        include $(TOPDIR)/rules.mk
+        PKG_NAME:=daed-geosite
+        PKG_VERSION:=$(shell date +%Y%m%d)
+        PKG_RELEASE:=1
+        include $(INCLUDE_DIR)/package.mk
+        
+        define Package/daed-geosite
+          SECTION:=net
+          CATEGORY:=Network
+          TITLE:=DAED GeoSite Database
+          PKGARCH:=all
+        endef
+        
+        define Build/Prepare
+        endef
+        
+        define Build/Compile
+        endef
+        
+        define Package/daed-geosite/install
+        	$(INSTALL_DIR) $(1)/usr/share/daed
+        	$(INSTALL_DATA) ./files/geosite.dat $(1)/usr/share/daed/
+        endef
+        
+        $(eval $(call BuildPackage,daed-geosite))
+        EOF
+        
+        # 下载最新的地理数据文件
+        wget -q -O package/daed-geodata/daed-geoip/files/geoip.dat \
+          https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geoip.dat
+        
+        wget -q -O package/daed-geodata/daed-geosite/files/geosite.dat \
+          https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geosite.dat
+        
+        # 将包添加到配置中（确保它们被编译）
+        echo "CONFIG_PACKAGE_daed-geoip=y" >> .config
+        echo "CONFIG_PACKAGE_daed-geosite=y" >> .config
+        
+        # 通知系统已添加新包
+        ./scripts/feeds install daed-geoip daed-geosite
+        
+        # 更新配置以包含新包
+        make defconfig
+
     - name: Load Custom Configuration(加载自定义配置)
       run: |
         cat $CONFIG_FILE $GENERAL_CONFIG_FILE > $OPENWRT_PATH/.config
