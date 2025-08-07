@@ -117,6 +117,7 @@ jobs:
         cd $OPENWRT_PATH
         ./scripts/feeds update -a
         ./scripts/feeds install -a
+        
     - name: Fix DAED missing dependencies(修复DAED依赖问题)
       run: |
         cd $OPENWRT_PATH
